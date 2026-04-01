@@ -53,13 +53,27 @@ python3 -m http.server
 
 ---
 
-## 🛠️ 架構教學：Google Calendar 到 Cloudflare Pages
+## 🛠️ 架構教學：Google Apps Script 推送資料至 Cloudflare KV
 
-我們的資料來源建議架構如下： 
-`[Google Calendar 日曆] -> [Google Apps Script (取得權限與整理資料)] -> [純前端網頁 (部署於 Cloudflare Pages)]`
+為了達到最佳的載入效能與承受高併發讀取，我們推薦以下的高效能架構：
+`[Google 日曆] -> [GAS 定時整理 JSON] -> (推送 POST) -> [Cloudflare KV] -> [前端網頁讀取 KV API]`
 
-### 回傳的 JSON 資料格式
-無論你使用哪種技術，你的 API 必須回傳如下格式的 JSON 陣列給前端讀取：
+也就是說，前端「不會」直接呼叫 Google 拿資料，而是去讀取儲存在 Cloudflare 邊緣節點上的快取資料。這不僅網頁秒開，也保護了 Google API 額度。
+
+### 1. Google Apps Script (GAS) 端設定
+1. 在 Google Apps Script 建立新專案，將本專案 `gas/Code.js` 的內容貼上。
+2. **替換 `API_URL`**：在 `Code.js` 中有一行 `var API_URL = "https://...";`。這個網址是你的 Cloudflare 接收端。**備註：這個 API URL 主要負責使用 Cloudflare KV 的方式去接收 JSON 檔案，而此 JSON 檔案是透過 GAS 單向產生並放進 KV 的。** 請務必將它替換成你自己的 Cloudflare Endpoint。
+3. **設定定期觸發 (Triggers)**：在 GAS 中設定「時間驅動的觸發器」，讓 `getDayOffData()` 函數每 5~15 分鐘自動執行一次，隨時把最新請假資料撈出來並推送到你的 KV 中。
+
+### 2. Cloudflare Pages + KV 端設定
+你需要建立一個 Cloudflare Pages 專案與 KV 命名空間來接收與儲存資料：
+1. **建立 KV 命名空間**：在 Cloudflare Dashboard 建立一個 KV 空間用來存資料。
+2. **寫一支接收 API (Functions)**：透過 Cloudflare Pages Functions（例如建立 `/functions/api/portal.js`），寫一段簡單邏輯：
+   - 當收到 `POST` 時：接住 GAS 傳來的 JSON 資料，並把它存進綁定好的 KV 中。
+   - 當收到 `GET` 時：將 KV 裡面的最新 JSON 吐出來，供 Dayoff-board 前端網頁（也就是 `config.js` 的 `dataApiUrl`）讀取。
+
+### 回傳的 JSON 資料格式範例
+不管底層怎麼儲存，你最後吐給前端的 API 必須回傳如下格式的 JSON 陣列：
 ```json
 [
   {
@@ -77,45 +91,6 @@ python3 -m http.server
 ]
 ```
 *(上述的 `startTime` / `endTime` 會由系統判斷是否與「今天」重疊，如果是，卡片就會亮底色！)*
-
-### 👉 實作方式一：Cloudflare Worker (擔任 Proxy)
-如果你本身已經有一個可以撈出資料的網址（例如你原本的 `/api/portal?key=dayoff_json`，或者 Google Apps Script 發布的 Web App），但不希望直接把這個網址曝露在前端 `config.js` 裡面。
-你可以架設一個 Cloudflare Worker 作為主機：
-
-1. 登入 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. 進入 **Workers & Pages** > **Create application** > **Create Worker**
-3. 核心程式碼範例如下：
-```javascript
-export default {
-  async fetch(request, env, ctx) {
-    // 解決 CORS 問題讓前端可直接 fetch
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,OPTIONS",
-      "Access-Control-Max-Age": "86400",
-    };
-    if (request.method === "OPTIONS") { return new Response(null, { headers: corsHeaders }); }
-
-    // 你真實的 Google Apps Script (Web App) 或內部 API 網址
-    const realApiUrl = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-    
-    try {
-      const response = await fetch(realApiUrl);
-      const data = await response.json();
-      
-      return new Response(JSON.stringify(data), {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          ...corsHeaders
-        }
-      });
-    } catch (error) {
-      return new Response(JSON.stringify({ error: "Fetch failed" }), { status: 500, headers: corsHeaders });
-    }
-  }
-};
-```
-4. 部署後，將取得的 Worker 網址（例如 `https://dayoff-api.your-username.workers.dev`）填入 `config.js`。
 
 ## 🎯 授權條款
 MIT License

@@ -7,9 +7,10 @@ window.APP_CONFIG = {
   logoUrl: "/static/logo.svg",
   locale: "zh-TW", // 預設語系 (zh-TW, en-US... 等)
   
-  // 資料來源 
-  // 例如：你的 Cloudflare Worker API 網址，該 API 負責回傳整理好的 Google Sheet JSON 資料
-  dataApiUrl: "/api/portal?key=dayoff_json",
+  // 資料來源：你的 Cloudflare Pages/Worker 收發 API 網址
+  // 【重要】如果你是使用我們推薦的 KV 架構，這是負責「讀取」的端點，前端使用 GET 拿資料。
+  // 因此，網址後方必須帶有「尾巴參數（例如 ?key=dayoff_json）」，Cloudflare 才知道該撈取哪個 KV 資料。
+  dataApiUrl: "https://your-worker.workers.dev/api/portal?key=dayoff_json",
 
   // 介面文字 (簡易 i18n)
   i18n: {

@@ -53,13 +53,27 @@ python3 -m http.server
 
 ---
 
-## 🛠️ Architecture Tutorial: Google Calendar to Cloudflare Pages
+## 🛠️ Architecture Tutorial: Push from GAS to Cloudflare KV
 
-Our recommended data source architecture:
-`[Google Calendar] -> [Google Apps Script (Handles Auth & Formats Data)] -> [Static Frontend Webpage (Hosted on Cloudflare Pages)]`
+To achieve optimal loading performance and handle high concurrency, we highly recommend the following high-performance architecture:
+`[Google Calendar] -> [GAS (Scheduled JSON Generator)] -> (POST Request) -> [Cloudflare KV] -> [Frontend Webpage fetches KV]`
+
+This means the frontend does not directly call Google API. Instead, it reads the cached data from Cloudflare's Edge Network (KV). This guarantees lightning-fast loading speeds and prevents hitting Google's API rate limits.
+
+### 1. Google Apps Script (GAS) Setup
+1. Create a new Google Apps Script project and paste the contents of `gas/Code.js` from this repository.
+2. **Replace `API_URL`**: In `Code.js`, there is a variable `var API_URL = "https://...";`. This URL represents your Cloudflare receiver endpoint. **Note: This API URL is specifically used to receive the JSON file through Cloudflare KV. The JSON is generated periodically via GAS and pushed directly into KV.** Please replace it with your own Cloudflare Endpoint.
+3. **Set up Triggers**: Configure a time-driven trigger in GAS to automatically run the `getDayOffData()` function every 5-15 minutes. This ensures the JSON data is correctly formatted & pushed to KV regularly.
+
+### 2. Cloudflare Pages + KV Setup
+You need a Cloudflare Pages project with a bound KV namespace to receive and store the data:
+1. **Create a KV Namespace**: Set up a KV namespace in your Cloudflare Dashboard.
+2. **Create the Receiver API**: Using Cloudflare Pages Functions (e.g., creating `/functions/api/portal.js`), write a logic that:
+   - On `POST`: Receives the pushed JSON from GAS and stores it into the bound KV.
+   - On `GET`: Retrieves the latest JSON from KV and serves it to the frontend webpage (this corresponds to the `dataApiUrl` in your `config.js`).
 
 ### Expected JSON Data Format
-Regardless of the technology you use, your API must return a JSON array in the following format:
+Regardless of your backend approach, your final API endpoint must return a JSON array in the following format:
 ```json
 [
   {
@@ -77,44 +91,6 @@ Regardless of the technology you use, your API must return a JSON array in the f
 ]
 ```
 *(The `startTime` and `endTime` will be parsed by the system to determine if it overlaps with "today". If it does, the event card background will be highlighted!)*
-
-### 👉 Implementation Option 1: Cloudflare Worker (as a Proxy)
-If you already have a working URL (e.g., your Google Apps Script Web App), but you don't want to expose this URL directly in the frontend `config.js`, you can set up a Cloudflare Worker as a proxy:
-
-1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. Navigate to **Workers & Pages** > **Create application** > **Create Worker**
-3. Example of core code routing:
-```javascript
-export default {
-  async fetch(request, env, ctx) {
-    // Resolve CORS issues so the frontend can fetch directly
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,OPTIONS",
-      "Access-Control-Max-Age": "86400",
-    };
-    if (request.method === "OPTIONS") { return new Response(null, { headers: corsHeaders }); }
-
-    // Your actual Google Apps Script (Web App) or internal API URL
-    const realApiUrl = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-    
-    try {
-      const response = await fetch(realApiUrl);
-      const data = await response.json();
-      
-      return new Response(JSON.stringify(data), {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          ...corsHeaders
-        }
-      });
-    } catch (error) {
-      return new Response(JSON.stringify({ error: "Fetch failed" }), { status: 500, headers: corsHeaders });
-    }
-  }
-};
-```
-4. After deployment, insert the Worker URL (e.g., `https://dayoff-api.your-username.workers.dev`) into your `config.js`.
 
 ## 🎯 License
 MIT License

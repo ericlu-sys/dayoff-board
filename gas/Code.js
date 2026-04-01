@@ -1,6 +1,8 @@
 var web_title = "WPORT之今天誰請假";
 var name_of_day_off = "請假";
 var how_long = 30;
+// 【重要】接收端 API 網址 (Cloudflare Pages Functions)
+// 這裡只需要基礎網址，不須加上 ?key=xxx，因為我們會在下方透過 POST 的 JSON Body (payload) 將 key 傳送過去
 var API_URL = "https://wport-plugins.pages.dev/api/portal";
 
 // ❌ 不需要 doGet() 函数了，因为 HTML 由 Cloudflare Pages 提供
