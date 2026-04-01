@@ -5,15 +5,17 @@
 </p>
 
 A pure frontend static web tool for displaying "Who's on leave today" or "Upcoming leaves" in your team. 
-By storing data in Google Sheets and converting it into JSON via an API middleware (such as Cloudflare Worker or Google Apps Script), the frontend fetches and renders the data directly—no dedicated backend server required!
+By integrating with your team's Google Calendar, you can get a clear overview of everyone's leave status directly on this dashboard.
+
+**Architecture Motivation:**
+We use **Google Apps Script (GAS)** in the background to fetch Google Calendar info and convert it into a simple JSON array for the frontend. The reason we don't fetch Google APIs directly from the frontend or GitHub Actions is because **GAS seamlessly handles Google's tedious Authentication (OAuth) process** with zero overhead. Meanwhile, the lightweight frontend (`index.html`) can be easily deployed to services like Cloudflare Pages!
 
 ## ✨ Features
 - 🚀 **Pure Frontend Architecture**: Contains only HTML/JS/CSS (with Tailwind CSS). It can be directly deployed to any static site hosting service like GitHub Pages, Cloudflare Pages, or Vercel.
 - 🔄 **Auto-Refresh**: Automatically refreshes data every 5 minutes to ensure the latest leave status is displayed.
 - 📱 **Responsive Design**: Fully responsive, works seamlessly on both desktop and mobile devices.
 - 🛠️ **Framework-Agnostic**: Does not rely on complex frameworks like React or Vue; uses native ES Modules (Vanilla JS).
-- 💰 **Zero Server Cost**: Stores data in Google Sheets and provides services through free middleware APIs.
-
+- 💰 **Zero Server Cost**: Uses Google Apps Script (GAS) as a free middleware microservice, perfectly resolving the headache of Google Calendar API Authentication.
 ---
 
 ## 🚀 Quick Start
@@ -51,10 +53,10 @@ python3 -m http.server
 
 ---
 
-## 🛠️ Architecture Tutorial: Google Sheets to API Output
+## 🛠️ Architecture Tutorial: Google Calendar to Cloudflare Pages
 
 Our recommended data source architecture:
-`[Google Sheet] -> [API Middleware (GAS or Cloudflare Worker)] -> [Static Frontend Webpage]`
+`[Google Calendar] -> [Google Apps Script (Handles Auth & Formats Data)] -> [Static Frontend Webpage (Hosted on Cloudflare Pages)]`
 
 ### Expected JSON Data Format
 Regardless of the technology you use, your API must return a JSON array in the following format:

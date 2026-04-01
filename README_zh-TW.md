@@ -5,15 +5,17 @@
 </p>
 
 這是一個用來顯示團隊「今天誰請假」或「未來預計請假」的純前端靜態網頁工具。
-我們將資料儲存在 Google Sheet，透過 API（例如 Cloudflare Worker 或 Google Apps Script）轉換成 JSON，並由前端直接抓取顯示，無需部署專屬的後端伺服器！
+透過串接其他服務，讓你在這個畫面上能一目了然地看到所有同仁的請假動態。
+
+**為什麼這樣設計？**
+我們使用 **Google Apps Script (GAS)** 在背後抓取大家的 Google Calendar (日曆) 資訊，並將其轉換成 JSON 給前端讀取。之所以不直接把 Google API 寫在前端或是 GitHub Actions 上，是因為 **GAS 可以極其方便地無縫處理 Google 的權限認證 (Auth) 問題**。而實作出來的前端網頁 (index.html) 則可以輕巧地部署在 Cloudflare Pages 等環境上！
 
 ## ✨ 特色
 - 🚀 **純前端架構**：僅包含 HTML/JS/CSS（加上 Tailwind CSS），可直接部署在 GitHub Pages、Cloudflare Pages 或 Vercel 等任何靜態網站託管服務。
 - 🔄 **自動更新**：每隔 5 分鐘自動刷新資料，確保顯示最新請假動態。
 - 📱 **RWD 設計**：支援電腦桌機、手機，皆可完美瀏覽。
 - 🛠️ **不綁死框架**：不依賴 React / Vue 等複雜框架，使用原生的 ES Module (Vanilla JS)。
-- 💰 **無伺服器成本**：使用 Google Sheet 儲存資料，並透過免費的中繼 API 提供服務。
-
+- 💰 **無伺服器成本**：使用 Google Apps Script (GAS) 充當免錢的中繼微服務，且完美解決了存取 Google Calendar 時惱人的 Auth 難題。
 ---
 
 ## 🚀 快速開始
@@ -51,10 +53,10 @@ python3 -m http.server
 
 ---
 
-## 🛠️ 架構教學：Google Sheet 到 API 輸出
+## 🛠️ 架構教學：Google Calendar 到 Cloudflare Pages
 
 我們的資料來源建議架構如下： 
-`[Google Sheet] -> [API Middleware (GAS 或 Cloudflare Worker)] -> [純前端網頁]`
+`[Google Calendar 日曆] -> [Google Apps Script (取得權限與整理資料)] -> [純前端網頁 (部署於 Cloudflare Pages)]`
 
 ### 回傳的 JSON 資料格式
 無論你使用哪種技術，你的 API 必須回傳如下格式的 JSON 陣列給前端讀取：
