@@ -1,0 +1,106 @@
+/* 引入字體 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+/* --- 變數定義 --- */
+:root {
+    --wport-primary: #56C7BB;
+    --wport-primary-dark: #45a89d;
+    --wport-bg: #f8fafc;
+    --text-main: #1e293b;
+    --text-muted: #94a3b8;
+}
+
+/* --- 基礎設定 --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body { 
+    background-color: var(--wport-bg); 
+    font-family: 'Noto Sans TC', -apple-system, sans-serif; 
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* --- 自定義捲軸 (舊版細節) --- */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* --- 標籤按鈕 (Tag Buttons) --- */
+.tag-btn {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+}
+
+.tag-btn:hover {
+    background-color: #f1f5f9;
+    transform: translateY(-1px);
+}
+
+.tag-btn.active { 
+    background-color: var(--wport-primary) !important; 
+    color: white !important; 
+    border-color: var(--wport-primary) !important;
+    box-shadow: 0 4px 12px -2px rgba(86, 199, 187, 0.4); 
+}
+
+/* --- 卡片樣式 (Link Cards) --- */
+.link-card { 
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 舊版喜歡的懸浮效果：邊框變色 + 大陰影 */
+.link-card:hover {
+    border-color: var(--wport-primary) !important;
+    box-shadow: 0 20px 25px -5px rgba(86, 199, 187, 0.1), 0 10px 10px -5px rgba(86, 199, 187, 0.04);
+    transform: translateY(-4px);
+}
+
+/* --- 搜尋框優化 --- */
+#searchInput {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+#searchInput:focus {
+    box-shadow: 0 0 0 2px rgba(86, 199, 187, 0.2);
+    background-color: white;
+}
+
+/* --- 工具類別 --- */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.max-w-6xl {
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+/* 響應式微調 */
+@media (max-width: 768px) {
+    .md\:p-12 { padding: 2rem 1rem; }
+}
+
+/* 補充在 common.css 末尾 */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.5em 1.5em;
+}
+
+input[type="checkbox"] {
+    accent-color: var(--wport-primary);
+}
